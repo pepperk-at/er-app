@@ -87,27 +87,27 @@ Repeat the steps above with:
 - **App URL:** a different name, e.g. `er-wait-dashboard-after`
 
 Streamlit uses `app_v2/requirements.txt` for this app. Pushing to `main` redeploys both apps.
-Teammates who upload data for the after app use the `app_v2/data/` folder.
+Data files for the after app go in the `app_v2/data/` folder.
 
 ## 7. Sharing
 
-- If the repo is private, open the app's **Settings → Sharing** and make it public, or invite the instructor by email.
-- To let group members push code, add them on GitHub under **Settings → Collaborators**. Everyone should **Fetch/Pull** before making changes.
+- The repo is public, so anyone with the app links can open both apps.
+- Only Katherine pushes to the repo. Group members send their files to her (see "Updating a data file" below).
 
 ## 8. Updating the app
 
 Edit the code, then **Commit** and **Push origin** in GitHub Desktop. Streamlit Cloud redeploys automatically, so there's no need to create a new app.
 
-### Updating a data file without GitHub Desktop
+### Updating a data file
 
-Group members who only own a data file can upload it in the browser:
+Group members send their data files to Katherine, who adds them to the repo:
 
-1. Open the repo on GitHub and go into the `data/` folder.
-2. Click **Add file → Upload files** and drop in the file. It must have the same name as the one it replaces.
-3. Write a short message, such as "Update forecast.csv", and click **Commit changes**.
-4. Wait a minute or two, then open the app link and check your page.
+1. Check the file has the same name and columns as the sample it replaces.
+2. Copy it into `app_v2/data/` (the after app). Leave the root `data/` folder alone so the before app keeps the samples.
+3. Run the after app locally and check the page that uses the file.
+4. Commit and **Push origin** in GitHub Desktop. Wait a minute or two, then check the online app.
 
-If the page shows an error after the upload, check the file against the format rules in `README.md`.
+If the page shows an error, check the file against the format rules in `README.md`.
 
 ## 9. How long the app stays online
 
