@@ -1,4 +1,4 @@
-"""Home dashboard, AFTER version (Chengjin's 48-hour forecast). Run with:  streamlit run app_v2/Home.py"""
+"""Home dashboard, AFTER version (Chengjin's 3-day forecast). Run with:  streamlit run app_v2/Home.py"""
 import streamlit as st
 
 import utils_v2 as utils  # own name so it never loads the original app's utils.py
@@ -18,16 +18,24 @@ peak_label = f"{peak['timestamp']:%a %H}:00"
 waiting = utils.waiting_list()
 now_row = utils.current_hour_row(staff)
 
-spaces = utils.spaces_table()
-free_now = int((spaces["status"] == "free").sum())
-free_soon = int((spaces["expected_free_in_min"] <= 120).sum())
+# Treatment spaces (Gulchaman's rules): free now is confirmed; "ending" is only an estimate of when
+# an occupied space's patient may leave. It is not a promise the space is clean and ready.
+try:
+    spaces = utils.spaces_summary(utils.spaces_table())
+except utils.SpacesDataError:
+    spaces = None
+if spaces:
+    free_now, ending_2h = spaces["free"], spaces["within_2h"]
+    spaces_text = (f"{free_now} space(s) free now and {ending_2h} more estimated to finish occupancy "
+                   f"within 2 hours (cleaning time unknown)")
 
 # --- one alert banner ---
-if peak["nurse_gap"] > 0 and free_now + free_soon < 4:
-    st.error(f"Rush expected at {peak_label} and only {free_now + free_soon} spaces free in the next 2 hours. "
+if peak["nurse_gap"] > 0 and spaces and free_now + ending_2h < 4:
+    st.error(f"Rush expected at {peak_label}: only {spaces_text}. "
              f"Call in {int(peak['nurse_gap'])} nurse(s) and speed up discharges.")
 elif peak["nurse_gap"] > 0:
-    st.warning(f"Rush expected at {peak_label}: short {int(peak['nurse_gap'])} nurse(s).")
+    st.warning(f"Rush expected at {peak_label}: short {int(peak['nurse_gap'])} nurse(s)."
+               + (f" Treatment spaces: {spaces_text}." if spaces else ""))
 else:
     st.success("Staffing looks enough for the next 24 hours.")
 
@@ -40,11 +48,16 @@ with c1:
 with c2:
     st.subheader("2. Waiting room")
     st.metric("Patients waiting", len(waiting))
-    st.metric("Overdue for reassessment", int(waiting["overdue"].sum()))
-    st.bar_chart(waiting["ctas_level"].value_counts().sort_index(), x_label="Triage level", y_label="Patients")
+    st.metric("Overdue for reassessment", int((waiting["alert"] == "Overdue").sum()))
+    st.altair_chart(utils.level_chart(waiting, height=250, numbers_only=True), width="stretch")
 with c3:
     st.subheader("3. Treatment spaces")
-    st.metric("Free now", free_now)
-    st.metric("Likely free within 2 hours", free_soon)
+    if spaces:
+        st.metric("Free now", free_now)
+        st.metric("Estimated to finish occupancy within 2 h", ending_2h)
+        st.caption(f"{spaces['exceeded']} occupied spaces past their estimate (update needed). "
+                   f"{spaces['cleaning']} being cleaned, readiness unknown.")
+    else:
+        st.error("Treatment-space data is invalid. See the Treatment Spaces page.")
 
 st.caption("Use the pages in the sidebar for details.")

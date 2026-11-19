@@ -1,7 +1,8 @@
-"""Make app_v2/data/forecast.csv: a 48-hour ER arrivals forecast for Ottawa.
+"""Make app_v2/data/forecast.csv: a 3-day (72-hour) ER arrivals forecast for Ottawa.
 
 Chengjin's Prophet model, with fixes so the output matches the app's file agreement.
-Run it on the demo day (Nov 30). It forecasts today 00:00 to tomorrow 23:00.
+It forecasts today 00:00 to the day after tomorrow 23:00 (fixed calendar days, not a rolling window).
+Run it on Nov 29 or Nov 30: either way the demo hour (Nov 30 18:00) and the next 24 hours are covered.
 
     pip install prophet pandas requests
     python app_v2/tools/forecast.py
@@ -9,12 +10,12 @@ Run it on the demo day (Nov 30). It forecasts today 00:00 to tomorrow 23:00.
 Needs ottawa_er_training_data_2025.csv (columns: timestamp, arrivals,
 temperature_c, precipitation_mm) in this tools/ folder.
 
-Changes from the original script:
+Changes from Chengjin's script (data/Chengjin/forecast 3 days/forecast.py):
 - Dates are written as YYYY-MM-DD (the app's format), not YYYY/MM/DD.
 - Training window keeps all of Oct 31 (the old filter stopped at Oct 31 00:00).
 - Negative predictions are set to 0 (Prophet can go below zero at quiet hours).
 - Missing weather values are filled so Prophet does not crash.
-- The script stops with a clear message if the weather call fails or the output is not 48 hours.
+- The script stops with a clear message if the weather call fails or the output is not 3 full days.
 - The file is saved straight into app_v2/data/, whatever folder you run it from.
 - truststore is optional: only needed on networks with certificate problems.
 """
@@ -33,6 +34,7 @@ except ImportError:
 HERE = Path(__file__).parent
 TRAINING_FILE = HERE / "ottawa_er_training_data_2025.csv"
 OUTPUT_FILE = HERE.parent / "data" / "forecast.csv"
+DAYS = 3  # Chengjin's update: 3 days instead of 2
 
 # ---------------------------------------------------------
 # 1. TRAIN THE MODEL
@@ -71,7 +73,7 @@ params = {
     "longitude": -75.6972,
     "hourly": ["temperature_2m", "precipitation"],
     "timezone": "America/Toronto",
-    "forecast_days": 2,  # today 00:00 to tomorrow 23:00 = 48 hours
+    "forecast_days": DAYS,  # today 00:00 to the day after tomorrow 23:00 = 72 hours
 }
 print("Fetching weather forecast for Ottawa...")
 response = requests.get("https://api.open-meteo.com/v1/forecast", params=params, timeout=30)
@@ -92,7 +94,7 @@ future["precipitation_mm"] = future["precipitation_mm"].fillna(0)
 # ---------------------------------------------------------
 # 3. PREDICT AND SAVE IN THE APP'S FORMAT
 # ---------------------------------------------------------
-print("Generating 48-hour forecast...")
+print(f"Generating {DAYS * 24}-hour forecast...")
 forecast = model.predict(future)
 
 out = pd.DataFrame(
@@ -103,8 +105,8 @@ out = pd.DataFrame(
     }
 )
 
-if len(out) != 48 or out.groupby("date")["hour"].nunique().ne(24).any():
-    raise SystemExit(f"Expected 48 hours (2 full days), got {len(out)} rows. No file written.")
+if len(out) != DAYS * 24 or out.groupby("date")["hour"].nunique().ne(24).any():
+    raise SystemExit(f"Expected {DAYS * 24} hours ({DAYS} full days), got {len(out)} rows. No file written.")
 
 print(out.to_string(index=False))
 out.to_csv(OUTPUT_FILE, index=False)
