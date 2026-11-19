@@ -2,3 +2,6 @@ __pycache__/
 .venv/
 *.pyc
 then/
+
+# API keys (Ticketmaster) for local runs
+.streamlit/secrets.toml
