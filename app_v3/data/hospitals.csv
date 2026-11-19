@@ -1,0 +1,6 @@
+hospital_id,name,short_name,address,lat,lon,annual_ed_visits,pediatric_only,visits_source
+civic,The Ottawa Hospital - Civic Campus,Civic,1053 Carling Ave,45.3926,-75.7214,85000,no,"The Ottawa Hospital: over 170,000 visits a year across its 2 adult EDs (uOttawa Dept. of Emergency Medicine); split evenly between campuses (assumption)"
+general,The Ottawa Hospital - General Campus,General,501 Smyth Rd,45.4013,-75.6496,85000,no,"The Ottawa Hospital: over 170,000 visits a year across its 2 adult EDs (uOttawa Dept. of Emergency Medicine); split evenly between campuses (assumption)"
+qch,Queensway Carleton Hospital,QCH,3045 Baseline Rd,45.3378,-75.8092,78000,no,"About 78,000 visits a year (erstat.ca; Ottawa Citizen 2017)"
+montfort,Hopital Montfort,Montfort,713 Montreal Rd,45.4457,-75.6389,50000,no,"Over 50,000 visits a year (erstat.ca)"
+cheo,CHEO (children's hospital),CHEO,401 Smyth Rd,45.4003,-75.6519,71273,yes,"71,273 ED visits, Apr 2024 to Mar 2025 (CHEO data page). Patients 18 and under only"
