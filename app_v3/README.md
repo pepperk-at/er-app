@@ -3,7 +3,7 @@
 A copy of the AFTER app (`app_v2/`) made on Nov 18, 2026, for trying new ideas.
 `app_v2/` stays as the AFTER version the team agreed on; root stays as the BEFORE version.
 
-> **Not committed or pushed yet (Nov 19, 2026). Paused mid-review: see "Paused here" at the bottom.**
+> **Pushed Nov 20, 2026. Page-by-page review done. Open to-dos: see "Paused here" at the bottom.**
 
 ## Run on your computer
 From the `er-app` folder:
@@ -21,7 +21,7 @@ From the `er-app` folder:
 ## New ideas
 | Date | Idea | From | Status |
 |---|---|---|---|
-| Nov 18, 2026 | City of Ottawa scale: all 5 EDs, map, events, incident scenarios | Katherine | Built, not pushed |
+| Nov 18, 2026 | City of Ottawa scale: all 5 EDs, map, events, incident scenarios | Katherine | Built, pushed Nov 20 |
 
 ## Idea 1: City of Ottawa, events and incidents
 New page **City & Events** (`pages/0_City_and_Events.py`, logic in `city_v3.py`) and a **Hospital** picker
@@ -79,7 +79,9 @@ the New Jersey game to Dec 3 (was Dec 4) and the Charge opener to 14:00. Attenda
   (now "No patients expected"); CHEO now says when it is full and extra children go to adult EDs; a warning shows
   when patients arrive after the forecast ends (e.g. a late start on the last day), since they can't be in the
   staffing numbers.
-- Nov 18: Ticketmaster developer account pending approval, so the app uses events.csv only for now.
+- Nov 20: Ticketmaster key could not be obtained, so the app uses events.csv only. The live-events code stays in
+  case a key turns up. Alternatives looked at: NHL public schedule (no key, used to build events.csv), SeatGeek
+  (needs a developer signup), City of Ottawa open data (no events dataset).
 - Live events have no attendance, so the app uses the venue capacity (`VENUE_CAPACITY` in `city_v3.py`), or 500.
 - On demo day (Mon Nov 30) there is **no big game in Ottawa**: the Senators play in Nashville. Real events that
   night are small (NAC concerts, a Hard Rock Casino show). So row E01 is a **what-if** sold-out game at
@@ -132,22 +134,20 @@ Still to check: the visit numbers per campus, whether Civic is the right home ED
 **City & Events** (done): dark map, ED stars and buffers, DA layer, Where patients go table (Road km to 2 decimals),
 loop test and 3 edge-case fixes. Details in Idea 1 above.
 
-**Still to review:** Forecast & Staffing, Triage, Treatment Spaces.
+**Forecast & Staffing, Triage, Treatment Spaces** (done, Nov 20).
 
-## Paused here (Nov 19, 2026)
-Done today: Home and City & Events reviewed (see above), loop test of every scenario and page (no errors).
+## Paused here (Nov 20, 2026)
+Done: page-by-page review of all pages; `events.csv` rebuilt for Nov 20 to Dec 10; everything committed and pushed
+to `main` (redeploys both Streamlit apps).
 
-Not committed or pushed. Wait for Katherine's go-ahead. New files not yet in git: `data/ottawa_da.geojson`,
-`data/ottawa_city.geojson`, `tools/ottawa_boundaries.py`.
-
-Before any push: the repo is **public**, and `data/Gulchaman/` and `data/Godwin/` (teammates' raw handoffs) are
-public too. Check with the team that this is OK first. Pushing to main redeploys both Streamlit apps.
+Teammates' raw handoffs (`data/Chengjin/`, `data/Godwin/`, `data/Gulchaman/`) are kept local only and are in
+`.gitignore`, so they are not in the public repo. Three old Chengjin files (`forecast.csv`, `forecast.zip`,
+`forecast/forecast.py`) were pushed before Nov 20 and are still in the GitHub history.
 
 To do next:
-- Continue the review: Forecast & Staffing, then Triage, then Treatment Spaces.
-- Ticketmaster: add `TICKETMASTER_API_KEY` to `.streamlit/secrets.toml` (and Streamlit Cloud secrets) once the
-  developer account is approved, then test live events.
+- Click through every page of the deployed V3 app to confirm the cloud version works.
 - Confirm with the team: Civic is the right `HOME_ED`, the visit numbers per campus, and the 25% who go to an ED.
 - Decide: share the overflow by ED size (now) or by distance.
 - Check hovering over the lines and stars in a real browser (only checked with screenshots so far).
-- Before pushing: click through every page (pydeck comes with Streamlit, so requirements.txt needs no change).
+- Check the unconfirmed start times and attendance guesses in `events.csv` (see its `notes` column) before demo day.
+- Class pitch Part 2 and the slide still say triage estimates wait times per level (see `app_v2/README.md`).
