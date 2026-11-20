@@ -7,3 +7,7 @@ then/
 .streamlit/secrets.toml
 
 reference/
+# Teammates raw handoffs (kept local, not public)
+data/Chengjin/
+data/Godwin/
+data/Gulchaman/
