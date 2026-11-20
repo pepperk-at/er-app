@@ -22,7 +22,8 @@ DATA = Path(__file__).parent / "data"
 DEMO_NOW = pd.Timestamp("2026-11-30 18:00")
 TIMEZONE = "America/Toronto"
 
-# CTAS reassessment intervals in minutes (Murray et al., 2004). Level 1 = continuous care.
+# CTAS reassessment intervals in minutes, confirmed by Godwin (Member 2) in
+# data/Godwin/triage_group_brief.docx (CTAS, Murray et al., 2004). Level 1 = continuous care.
 REASSESS_MIN = {1: 0, 2: 15, 3: 30, 4: 60, 5: 120}
 
 # CTAS level names and colours (team choice: red, orange, yellow, green, white).
@@ -35,7 +36,7 @@ CTAS = {
     5: {"name": "Non-urgent", "color": "#F4F4F4", "text": "black"},
 }
 
-# Wait alerts. PLACEHOLDER until Member 2 confirms the thresholds:
+# Wait alerts. Thresholds = REASSESS_MIN (Godwin). DUE_SOON_SHARE is a team guess, not in his brief:
 # "Overdue" = waited longer than the reassessment interval for the level.
 # "Due soon" = waited at least DUE_SOON_SHARE of that interval (80% = 12 of 15 min for level 2).
 DUE_SOON_SHARE = 0.8

@@ -3,7 +3,7 @@
 A copy of the AFTER app (`app_v2/`) made on Nov 18, 2026, for trying new ideas.
 `app_v2/` stays as the AFTER version the team agreed on; root stays as the BEFORE version.
 
-> **Not committed or pushed yet (Nov 18, 2026).**
+> **Not committed or pushed yet (Nov 19, 2026). Paused mid-review: see "Paused here" at the bottom.**
 
 ## Run on your computer
 From the `er-app` folder:
@@ -34,7 +34,10 @@ in the sidebar of every page.
   Montfort over 50,000, CHEO 71,273 (Apr 2024 to Mar 2025). Map locations are approximate.
 - Triage and Treatment Spaces pages always show the home ED's patient records (there are none for the others).
 
-**Events** (`data/events.csv`): a hand-made list, researched Nov 18. Each row has its source.
+**Events** (`data/events.csv`): a hand-made list, rebuilt Nov 20 (27 events, Nov 20 to Dec 10). Each row has its
+source. Senators home games come from the NHL's public schedule (`api-web.nhle.com`, no key, unofficial); this fixed
+the New Jersey game to Dec 3 (was Dec 4) and the Charge opener to 14:00. Attendance for most non-hockey rows is a guess
+(see `notes`). Events in Gatineau are left out, since patients there would go to Quebec hospitals.
 - No official City of Ottawa events feed was found. The free source is the Ticketmaster Discovery API.
   To switch on live events, get a free key at developer.ticketmaster.com and save it as
   `TICKETMASTER_API_KEY = "..."` in `.streamlit/secrets.toml` (locally, already in `.gitignore`) or in the
@@ -54,6 +57,28 @@ in the sidebar of every page.
 - Hover fix (Nov 18): Streamlit 1.65 drew the hover box one map-height above the mouse (off the map), and it
   escapes HTML in hover text. `TOOLTIP_STYLE` adds `top: 100%` to cancel the offset, and tips are plain text.
   Tested in headless Chrome. If Streamlit is upgraded and the box lands below the map, remove `top`.
+- Map restyle (Nov 19): dark Carto basemap (light grey road and place names), ED dots all the same size
+  (no longer scaled by visits), events as stars (IconLayer, SVG star), incident venue as a big gold star,
+  a buffer per ED (one colour per ED), and Ottawa's 2021 dissemination areas plus the
+  City of Ottawa boundary (Statistics Canada, `data/ottawa_da.geojson`, `data/ottawa_city.geojson`, made by
+  `tools/ottawa_boundaries.py`). Both new layers have on/off toggles above the map.
+- Buffers (Nov 19, changed from 50 km at 50%): the 5 EDs are within about 15 km of each other, so 50 km circles
+  covered the whole city and stacked into a solid colour. Now 10 km (`BUFFER_KM`) with a light fill (~12%,
+  `BUFFER_ALPHA`) and a solid edge, plus thin drive-time rings at 5, 10 and 15 min (`DRIVE_ZONES_MIN`). The rings
+  use the routing rule (straight line x 1.4 at 40 km/h), so 10 km is about 21 min. Circles, not real road times.
+- Buffer per hospital (Nov 19): only the ED picked in the sidebar **Hospital** dropdown gets the buffer and rings
+  (`focus` in `city_map`). Change the dropdown to see another ED's zone.
+- Where patients go (Nov 19): a **Where patients go** table under the scenario settings (`route_table` in
+  `city_v3.py`) lists every ED nearest first, with drive time, patients and why (nearest adult ED, children first,
+  not needed, full and sharing overflow). It updates before **Apply**. After Apply, each line has a label
+  ("3 pt · 8 min") and the map zooms to the venue and the EDs that get patients.
+  Example: NAC (300 people, food poisoning defaults) gives 3 patients, all to the Civic (8 min); General is 9 min.
+- Loop test (Nov 19): every event x incident type, a custom event at each venue, 11 edge cases (0 and 100,000
+  attendees, all sliders at 0 or 100%, late starts) and every page x every hospital. No errors. Fixed 3 edge cases:
+  with 0 patients the table said "Not needed: nearer EDs had space" and the page said "stays within capacity"
+  (now "No patients expected"); CHEO now says when it is full and extra children go to adult EDs; a warning shows
+  when patients arrive after the forecast ends (e.g. a late start on the last day), since they can't be in the
+  staffing numbers.
 - Nov 18: Ticketmaster developer account pending approval, so the app uses events.csv only for now.
 - Live events have no attendance, so the app uses the venue capacity (`VENUE_CAPACITY` in `city_v3.py`), or 500.
 - On demo day (Mon Nov 30) there is **no big game in Ottawa**: the Senators play in Nashville. Real events that
@@ -95,16 +120,34 @@ even though QCH is nearest. If the team prefers, the overflow could be shared by
 
 Still to check: the visit numbers per campus, whether Civic is the right home ED, and the share who go to an ED.
 
-## Paused here (Nov 18, 2026)
-Done today: app_v3 folder, City & Events page (5 EDs, events, incident scenarios), light map with legend,
-hover tips, label table, straight lines (thickness = patients), routing rules written up above.
+## Page-by-page review (Nov 19, 2026)
+**Home** (done):
+- Sidebar **Hospital** dropdown: picks which Ottawa ED every page shows (only the home ED has data files; the
+  others are scaled by annual visits). Fixed: it needed two clicks to switch. The widget now has its own key
+  (`_hospital`) instead of `index=`; the sidebar sliders got the same fix.
+- Info icons (tooltips) on Patients waiting, Overdue for reassessment, Free now, and Estimated to finish occupancy
+  within 2 h.
+- New **Triage levels (CTAS)** table at the bottom: level, name, plain meaning, reassessment interval.
 
-Not committed or pushed. Katherine said "not yet"; wait for her go-ahead.
+**City & Events** (done): dark map, ED stars and buffers, DA layer, Where patients go table (Road km to 2 decimals),
+loop test and 3 edge-case fixes. Details in Idea 1 above.
+
+**Still to review:** Forecast & Staffing, Triage, Treatment Spaces.
+
+## Paused here (Nov 19, 2026)
+Done today: Home and City & Events reviewed (see above), loop test of every scenario and page (no errors).
+
+Not committed or pushed. Wait for Katherine's go-ahead. New files not yet in git: `data/ottawa_da.geojson`,
+`data/ottawa_city.geojson`, `tools/ottawa_boundaries.py`.
+
+Before any push: the repo is **public**, and `data/Gulchaman/` and `data/Godwin/` (teammates' raw handoffs) are
+public too. Check with the team that this is OK first. Pushing to main redeploys both Streamlit apps.
 
 To do next:
+- Continue the review: Forecast & Staffing, then Triage, then Treatment Spaces.
 - Ticketmaster: add `TICKETMASTER_API_KEY` to `.streamlit/secrets.toml` (and Streamlit Cloud secrets) once the
   developer account is approved, then test live events.
 - Confirm with the team: Civic is the right `HOME_ED`, the visit numbers per campus, and the 25% who go to an ED.
 - Decide: share the overflow by ED size (now) or by distance.
-- Check hovering over the new lines in a real browser (only checked with a screenshot so far).
+- Check hovering over the lines and stars in a real browser (only checked with screenshots so far).
 - Before pushing: click through every page (pydeck comes with Streamlit, so requirements.txt needs no change).

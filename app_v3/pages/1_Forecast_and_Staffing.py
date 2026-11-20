@@ -19,6 +19,8 @@ days = df["date"].nunique()
 st.write(f"Expected arrivals for {days} days ({df['timestamp'].min():%Y/%m/%d %H:%M} to "
          f"{df['timestamp'].max():%Y/%m/%d %H:%M}), and the staff needed to handle them. "
          "Forecast by Chengjin (Prophet model with Ottawa weather).")
+st.caption("The model is trained on synthetic (dummy) hourly arrivals for 2025 plus real Ottawa weather from "
+           "Open-Meteo. The data is illustrative and does not come from any specific hospital.")
 
 # Time as text without a timezone, so the browser shows the hours exactly as in forecast.csv.
 df["time"] = df["timestamp"].dt.strftime("%Y-%m-%dT%H:%M:%S")

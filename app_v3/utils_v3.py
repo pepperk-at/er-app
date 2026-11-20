@@ -22,7 +22,8 @@ DATA = Path(__file__).parent / "data"
 DEMO_NOW = pd.Timestamp("2026-11-30 18:00")
 TIMEZONE = "America/Toronto"
 
-# CTAS reassessment intervals in minutes (Murray et al., 2004). Level 1 = continuous care.
+# CTAS reassessment intervals in minutes, confirmed by Godwin (Member 2) in
+# data/Godwin/triage_group_brief.docx (CTAS, Murray et al., 2004). Level 1 = continuous care.
 REASSESS_MIN = {1: 0, 2: 15, 3: 30, 4: 60, 5: 120}
 
 # CTAS level names and colours (team choice: red, orange, yellow, green, white).
@@ -35,7 +36,7 @@ CTAS = {
     5: {"name": "Non-urgent", "color": "#F4F4F4", "text": "black"},
 }
 
-# Wait alerts. PLACEHOLDER until Member 2 confirms the thresholds:
+# Wait alerts. Thresholds = REASSESS_MIN (Godwin). DUE_SOON_SHARE is a team guess, not in his brief:
 # "Overdue" = waited longer than the reassessment interval for the level.
 # "Due soon" = waited at least DUE_SOON_SHARE of that interval (80% = 12 of 15 min for level 2).
 DUE_SOON_SHARE = 0.8
@@ -112,9 +113,13 @@ def assumptions():
     hospitals = city_v3.load_hospitals()
     ids = hospitals["hospital_id"].tolist()
     names = dict(zip(ids, hospitals["name"]))
+    # The widget has its own key (_hospital), seeded from the plain key only when Streamlit has dropped it.
+    # Passing the saved value as index= instead changes the widget's identity after each pick,
+    # which made the dropdown need two clicks.
     st.session_state.setdefault("hospital", city_v3.HOME_ED)
+    st.session_state.setdefault("_hospital", st.session_state["hospital"])
     st.session_state["hospital"] = st.sidebar.selectbox(
-        "Hospital", ids, index=ids.index(st.session_state["hospital"]), format_func=names.get,
+        "Hospital", ids, key="_hospital", format_func=names.get,
         help="Only the home ED has data files. The others use the same pattern, scaled by annual ED visits.")
     if st.session_state.get("incident"):
         st.sidebar.warning(f"Incident scenario on: {st.session_state['incident']['event']}")
@@ -127,9 +132,13 @@ def assumptions():
     ]
     for key, label, lo, hi, default, step in sliders:
         st.session_state.setdefault(key, default)
-        st.session_state[key] = st.sidebar.slider(label, lo, hi, st.session_state[key], step)
-    st.sidebar.info("V3 (new ideas): all Ottawa EDs and event incidents, on top of Chengjin's 72-hour forecast "
-                    "and Gulchaman's treatment-space update. Other data is still the sample.")
+        st.session_state.setdefault("_" + key, st.session_state[key])  # same two-click fix as the hospital picker
+        st.session_state[key] = st.sidebar.slider(label, lo, hi, step=step, key="_" + key)
+    st.sidebar.markdown("**Project team**")
+    st.sidebar.caption("Forecast & Staffing · Chengjin  \n"
+                       "Triage · Godwin  \n"
+                       "Treatment Spaces · Gulchaman  \n"
+                       "City & Events, Integration · Katherine")
 
 
 def selected_hospital():

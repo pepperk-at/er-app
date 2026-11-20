@@ -11,8 +11,10 @@ How the numbers are made (all estimates, see app_v3/README.md):
 - Surge capacity = treatment spaces free now + spaces estimated to finish within 4 h
   (Gulchaman's rules on the home ED's spaces.csv, scaled for the other EDs).
 """
+import json
 import math
 import os
+import urllib.parse
 
 import pandas as pd
 import pydeck as pdk
@@ -254,7 +256,37 @@ def incident_plan(params):
             rows.append({"timestamp": slot, "hospital_id": r.hospital_id, "short_name": r.short_name,
                          "extra_arrivals": round(r.patients * share, 1)})
     hourly = pd.DataFrame(rows, columns=["timestamp", "hospital_id", "short_name", "extra_arrivals"])
-    return {"patients": n, "hospitals": h, "hourly": hourly}
+    return {"patients": n, "children": kids, "hospitals": h, "hourly": hourly}
+
+
+def route_table(plan):
+    """Where the patients go, one row per ED in drive-time order, with the reason (plain words)."""
+    h = plan["hospitals"]
+    rows, first_adult = [], True
+    for r in h.itertuples():
+        if plan["patients"] == 0:
+            why = "No patients expected"
+        elif r.pediatric_only:
+            if not r.patients:
+                why = "No children expected"
+            elif plan.get("children", 0) > r.capacity:
+                why = "Full: the other children go to the adult EDs"
+            else:
+                why = "Children (18 and under) go here first"
+        elif r.patients == 0:
+            why = "Not needed: nearer EDs had space"
+        elif r.over_capacity:
+            why = "Full: gets a share of the overflow (by ED size)"
+        elif first_adult:
+            why = "Nearest adult ED"
+        else:
+            why = "Next nearest: the nearer EDs were full"
+        if not r.pediatric_only:
+            first_adult = False
+        rows.append({"Hospital": MAP_LABELS.get(r.hospital_id, r.short_name), "Drive (min)": r.drive_min,
+                     "Road km (est.)": round(r.km, 2), "Patients": int(r.patients),
+                     "Surge capacity": int(r.capacity), "Why": why})
+    return pd.DataFrame(rows)
 
 
 def active_plan():
@@ -297,18 +329,41 @@ STATUS_COLORS = {  # RGB, matching the app's alert colours
     "Over capacity": [214, 39, 40], "Receiving patients": [242, 142, 43],
     "No incident patients": [44, 160, 44], "Hospital": [76, 155, 232],
 }
-EVENT_COLORS = {"Event (events.csv)": [148, 103, 189], "Event (live, Ticketmaster)": [23, 190, 207]}
-VENUE_COLOR = [148, 103, 189]  # the incident venue
+EVENT_COLORS = {"Event (events.csv)": [188, 145, 235], "Event (live, Ticketmaster)": [23, 190, 207]}
+VENUE_COLOR = [255, 215, 0]  # the incident venue (gold star)
+# One colour per ED for its 10 km buffer (light fill) and drive-time rings.
+BUFFER_KM = 10
+BUFFER_ALPHA = 30  # out of 255, about 12% (5 overlapping buffers stay see-through)
+# Drive-time rings use the same rule as the patient routing: straight line x ROAD_FACTOR at DRIVE_KMH.
+# They are circles, not real road travel times.
+DRIVE_ZONES_MIN = (5, 10, 15)
+
+
+def zone_km(minutes):
+    """Straight-line radius (km) reached in `minutes` under the app's drive-time rule."""
+    return minutes / 60 * DRIVE_KMH / ROAD_FACTOR
+
+
+
+BUFFER_COLORS = {"civic": [31, 119, 180], "general": [255, 127, 14], "qch": [44, 160, 44],
+                 "montfort": [214, 39, 40], "cheo": [148, 103, 189]}
 # Map labels: clearer than the short names used in tables and charts.
 MAP_LABELS = {"civic": "Ottawa Hospital - Civic", "general": "Ottawa Hospital - General",
               "qch": "Queensway Carleton", "montfort": "Montfort", "cheo": "CHEO (children)"}
-LIGHT_MAP = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"  # free Carto light map, no key
-TOOLTIP_STYLE = {"backgroundColor": "white", "color": "#222", "fontSize": "13px", "maxWidth": "360px",
-                 "border": "1px solid #999", "borderRadius": "6px", "boxShadow": "0 2px 8px rgba(0,0,0,0.3)",
+# Free Carto dark map, no key: light grey road names, neighbourhoods, parks and water labels.
+DARK_MAP = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+LABEL_GREY = [215, 215, 215]
+TOOLTIP_STYLE = {"backgroundColor": "#1e1e1e", "color": "#dcdcdc", "fontSize": "13px", "maxWidth": "360px",
+                 "border": "1px solid #555", "borderRadius": "6px", "boxShadow": "0 2px 8px rgba(0,0,0,0.6)",
                  "padding": "8px 10px", "whiteSpace": "pre-line", "zIndex": "1000",
                  # Streamlit 1.65 places the hover box one map-height above the mouse; top: 100% (of the
                  # map-sized box it sits in) cancels that, also in fullscreen.
                  "top": "100%", "marginTop": "12px", "marginLeft": "12px"}
+# Five-point star icon. mask=True lets deck.gl colour it with get_color.
+_STAR_SVG = ('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24">'
+             '<path fill="white" d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.6l-6.4 3.5 1.4-7.1-5.3-5 7.2-.9z"/></svg>')
+STAR_ICON = {"url": "data:image/svg+xml;charset=utf-8," + urllib.parse.quote(_STAR_SVG),
+             "width": 64, "height": 64, "anchorY": 32, "mask": True}
 
 
 def _plain(tip):
@@ -331,33 +386,77 @@ def _venue_tips(events):
     return pd.DataFrame(rows, columns=["venue", "lat", "lon", "color", "tip"])
 
 
-def map_legend(plan=None):
+@st.cache_data
+def load_boundaries():
+    """Ottawa dissemination areas and the city boundary (Statistics Canada 2021, see tools/ottawa_boundaries.py).
+    Returns (da, city) GeoJSON dicts, or (None, None) if the files are missing."""
+    try:
+        da = json.loads((utils.DATA / "ottawa_da.geojson").read_text(encoding="utf-8"))
+        city = json.loads((utils.DATA / "ottawa_city.geojson").read_text(encoding="utf-8"))
+        return da, city
+    except FileNotFoundError:
+        return None, None
+
+
+def map_legend(plan=None, buffers=True, areas=True, focus=None):
     """HTML legend for city_map (pydeck has no built-in legend)."""
-    def dot(rgb, label, size=12, ring=False):
-        border = "2px solid #fff;box-shadow:0 0 0 1px #555" if ring else "1px solid #333"
+    def rgb(c, a=1):
+        return f"rgba({c[0]},{c[1]},{c[2]},{a})"
+
+    def item(swatch, label):
         return (f'<span style="display:inline-flex;align-items:center;margin-right:18px;white-space:nowrap">'
-                f'<span style="width:{size}px;height:{size}px;border-radius:50%;border:{border};'
-                f'background:rgb({rgb[0]},{rgb[1]},{rgb[2]});margin-right:6px"></span>{label}</span>')
+                f'{swatch}<span style="margin-left:6px">{label}</span></span>')
+
+    def dot(c):
+        return f'<span style="width:12px;height:12px;border-radius:50%;border:1px solid #333;background:{rgb(c)}"></span>'
+
+    def star(c, size=16):
+        return f'<span style="color:{rgb(c)};font-size:{size}px;line-height:1">&#9733;</span>'
+
     if plan:
-        items = [dot(STATUS_COLORS[k], f"ED: {k.lower()}") for k in
+        items = [item(dot(STATUS_COLORS[k]), f"ED: {k.lower()}") for k in
                  ("Over capacity", "Receiving patients", "No incident patients")]
-        items.append(dot(VENUE_COLOR, "Incident venue", 16, ring=True))
-        items.append('<span style="margin-right:18px;white-space:nowrap">'
-                     '<span style="display:inline-block;width:28px;height:3px;vertical-align:middle;margin-right:4px;'
-                     'background:#888"></span><span style="display:inline-block;width:28px;height:9px;'
-                     'vertical-align:middle;margin-right:6px;background:#888"></span>'
-                     'Line: patients sent to that ED (thicker = more patients)</span>')
+        items.append(item(star(VENUE_COLOR, 22), "Incident venue"))
+        items.append(item('<span style="display:inline-block;width:28px;height:3px;background:#888"></span>'
+                          '<span style="display:inline-block;width:28px;height:9px;margin-left:4px;background:#888">'
+                          '</span>', "Line: patients sent to that ED (thicker = more patients, "
+                                     "label = patients and drive time)"))
     else:
-        items = [dot(STATUS_COLORS["Hospital"], "Emergency department")]
-    items += [dot(c, k, 9) for k, c in EVENT_COLORS.items()]
-    items.append('<span style="color:#777;white-space:nowrap">Bigger ED circle = more visits a year. '
-                 'Hover any circle or line for details.</span>')
+        items = [item(dot(STATUS_COLORS["Hospital"]), "Emergency department")]
+    items += [item(star(c), k) for k, c in EVENT_COLORS.items()]
+    if buffers:
+        items += [item(f'<span style="width:14px;height:14px;border-radius:50%;background:{rgb(c, 0.25)};'
+                       f'border:2px solid {rgb(c)}"></span>', f"{MAP_LABELS[h]} (hospital picked in the sidebar)")
+                  for h, c in BUFFER_COLORS.items() if focus in (None, h)]
+        edge = round(BUFFER_KM * ROAD_FACTOR / DRIVE_KMH * 60)
+        rings = ", ".join(f"{m}" for m in DRIVE_ZONES_MIN)
+        items.append(item('<span style="width:14px;height:14px;border-radius:50%;border:1px solid #ccc"></span>',
+                          f"Filled circle: {BUFFER_KM} km (about {edge} min drive). "
+                          f"Thin rings: about {rings} min drive"))
+    if areas:
+        items.append(item('<span style="width:14px;height:14px;border:1px solid #aaa"></span>',
+                          "Dissemination area (thicker line = City of Ottawa boundary)"))
+    items.append('<span style="color:#888;white-space:nowrap">Hover a dot, star or line for details.</span>')
     return '<div style="font-size:0.85rem;line-height:2">' + "".join(items) + "</div>"
 
 
-def city_map(events, plan=None, venue=None):
-    """pydeck map: hospitals (coloured by status), event venues, and straight lines from the incident venue.
-    Every layer has a `tip` column, shown on hover."""
+def _view(plan, venue, buffers):
+    """Whole city by default. With a scenario, centre on the venue and the EDs that get patients."""
+    if not (plan and venue):
+        return 45.38, -75.70, 9.7 if buffers else 10.2
+    h = plan["hospitals"]
+    pts = h.loc[h["patients"] > 0, ["lat", "lon"]].values.tolist() + [[venue["lat"], venue["lon"]]]
+    lats, lons = [p[0] for p in pts], [p[1] for p in pts]
+    span_m = max((max(lats) - min(lats)) * 111_000, (max(lons) - min(lons)) * 78_000, 2_000)
+    # Web map: about 110,700 m per pixel at zoom 0 at Ottawa's latitude; fit the span in about 380 px.
+    zoom = min(max(math.log2(110_700 * 380 / span_m), 9.5), 12.5)
+    return (max(lats) + min(lats)) / 2, (max(lons) + min(lons)) / 2, zoom
+
+
+def city_map(events, plan=None, venue=None, buffers=True, areas=True, focus=None):
+    """pydeck map on a dark base map: dissemination areas, a 10 km buffer with drive-time rings around the ED
+    picked in the sidebar (`focus`; all EDs if None), hospitals (coloured by status), event venues (stars), and
+    straight lines from the incident venue. Pickable layers have a `tip` column."""
     h = plan["hospitals"].copy() if plan else load_hospitals().assign(patients=0, over_capacity=0, capacity=0)
     visits = load_hospitals().set_index("hospital_id")["annual_ed_visits"]
     h["visits"] = h["hospital_id"].map(visits)
@@ -374,24 +473,56 @@ def city_map(events, plan=None, venue=None):
         h["tip"] = [f"<b>{n}</b>{k}<br/>{a}<br/>About {v:,} ED visits a year"
                     for n, k, a, v in zip(h["name"], kids, h["address"], h["visits"])]
     h["color"] = h["status"].map(STATUS_COLORS)
-    h["radius"] = 250 + 350 * h["scale"]
     # General and CHEO sit next to each other: nudge CHEO's label down so both are readable.
     h["offset"] = [[0, 24] if p else [0, -24] for p in h["pediatric_only"]]
     h["label"] = h["hospital_id"].map(MAP_LABELS).fillna(h["short_name"])
-
     h["tip"] = h["tip"].map(_plain)
+    zone = h[h["hospital_id"] == focus].copy() if focus else h.copy()
+    base = [BUFFER_COLORS.get(i, [150, 150, 150]) for i in zone["hospital_id"]]
+    zone["buffer_color"] = [c + [BUFFER_ALPHA] for c in base]
+    zone["edge_color"] = [c + [230] for c in base]
+    # One row per ED per drive-time ring, with a small "N min" label just inside the ring's top edge.
+    rings = pd.DataFrame([{"lon": lon, "lat": lat, "radius": zone_km(m) * 1000, "color": c + [170],
+                           "label_lat": lat + zone_km(m) / 111.0, "label": f"{m} min"}
+                          for lon, lat, c in zip(zone["lon"], zone["lat"], base) for m in DRIVE_ZONES_MIN])
+
     venues = _venue_tips(events)
     venues["tip"] = venues["tip"].map(_plain)
-    layers = [
-        pdk.Layer("ScatterplotLayer", venues, get_position="[lon, lat]", get_fill_color="color",
-                  opacity=0.7, get_radius=250, radius_min_pixels=4, pickable=True, auto_highlight=True),
-        pdk.Layer("ScatterplotLayer", h, get_position="[lon, lat]", get_fill_color="color", get_radius="radius",
-                  stroked=True, get_line_color=[40, 40, 40], line_width_min_pixels=1, radius_min_pixels=8,
-                  pickable=True, auto_highlight=True),
-        # Dark text on a white tag, readable on any map.
+    venues["icon"] = [STAR_ICON] * len(venues)
+
+    layers = []
+    da, city_line = load_boundaries()
+    if areas and da:
+        layers += [
+            pdk.Layer("GeoJsonLayer", da, stroked=True, filled=False, get_line_color=[170, 170, 170, 110],
+                      line_width_min_pixels=0.5),
+            pdk.Layer("GeoJsonLayer", city_line, stroked=True, filled=False, get_line_color=[220, 220, 220, 220],
+                      line_width_min_pixels=2),
+        ]
+    if buffers:
+        # Circle with a 10 km radius around each ED (deck.gl radius in metres), light fill and a solid edge.
+        # Not pickable, so hover still reaches the hospitals and stars on top.
+        layers += [
+            pdk.Layer("ScatterplotLayer", zone, get_position="[lon, lat]", get_radius=BUFFER_KM * 1000,
+                      get_fill_color="buffer_color", stroked=True, get_line_color="edge_color",
+                      line_width_min_pixels=2),
+            pdk.Layer("ScatterplotLayer", rings, get_position="[lon, lat]", get_radius="radius", filled=False,
+                      stroked=True, get_line_color="color", line_width_min_pixels=1),
+            pdk.Layer("TextLayer", rings, get_position="[lon, label_lat]", get_text="label", get_size=11,
+                      get_color=LABEL_GREY + [200], get_alignment_baseline="'top'"),
+        ]
+    paths_at = len(layers)  # patient lines go under the stars and hospital dots
+    layers += [
+        pdk.Layer("IconLayer", venues, get_position="[lon, lat]", get_icon="icon", get_size=22,
+                  get_color="color", pickable=True, auto_highlight=True),
+        # Same size for every ED (pixels), so a dot is just a location.
+        pdk.Layer("ScatterplotLayer", h, get_position="[lon, lat]", get_fill_color="color", get_radius=9,
+                  radius_units="'pixels'", stroked=True, get_line_color=[240, 240, 240],
+                  line_width_min_pixels=1.5, pickable=True, auto_highlight=True),
+        # Light grey text on a dark tag, to match the dark map.
         pdk.Layer("TextLayer", h, get_position="[lon, lat]", get_text="label", get_size=13,
-                  get_color=[20, 20, 20], get_pixel_offset="offset", font_weight=700,
-                  background=True, get_background_color=[255, 255, 255, 230], background_padding=[5, 3]),
+                  get_color=LABEL_GREY, get_pixel_offset="offset", font_weight=700,
+                  background=True, get_background_color=[25, 25, 25, 220], background_padding=[5, 3]),
     ]
     if plan and venue:
         lines = h[h["patients"] > 0].assign(src_lon=venue["lon"], src_lat=venue["lat"])
@@ -406,11 +537,21 @@ def city_map(events, plan=None, venue=None):
         # got no unit and drew the widths as huge stripes across the map.
         lines["path"] = [[[slon, slat], [lon, lat]] for slon, slat, lon, lat
                          in zip(lines["src_lon"], lines["src_lat"], lines["lon"], lines["lat"])]
-        layers.insert(0, pdk.Layer("PathLayer", lines, get_path="path", get_width="width", width_units="'pixels'",
-                                   cap_rounded=True, get_color="line_color", pickable=True, auto_highlight=True))
-        layers.append(pdk.Layer("ScatterplotLayer", pd.DataFrame([{**venue, "tip": _plain(venue.get("tip", ""))}]), get_position="[lon, lat]",
-                                get_fill_color=VENUE_COLOR, get_radius=600, stroked=True,
-                                get_line_color=[255, 255, 255], line_width_min_pixels=2, pickable=True))
-    view = pdk.ViewState(latitude=45.37, longitude=-75.75, zoom=10.2, pitch=0, bearing=0, max_pitch=0)  # flat, no 3D tilt
-    return pdk.Deck(layers=layers, initial_view_state=view, map_style=LIGHT_MAP,
+        layers.insert(paths_at, pdk.Layer("PathLayer", lines, get_path="path", get_width="width",
+                                          width_units="'pixels'", cap_rounded=True, get_color="line_color",
+                                          pickable=True, auto_highlight=True))
+        # Label each line at its middle: "N patients · M min", so the route can be read without hovering.
+        lines["mid_lon"] = (lines["src_lon"] + lines["lon"]) / 2
+        lines["mid_lat"] = (lines["src_lat"] + lines["lat"]) / 2
+        lines["line_label"] = [f"{p} pt · {d} min" for p, d in zip(lines["patients"], lines["drive_min"])]
+        layers.insert(paths_at + 1, pdk.Layer(
+            "TextLayer", lines, get_position="[mid_lon, mid_lat]", get_text="line_label", get_size=12,
+            get_color=[255, 255, 255], background=True, get_background_color=[60, 60, 60, 230],
+            background_padding=[4, 2]))
+        spot = pd.DataFrame([{**venue, "tip": _plain(venue.get("tip", "")), "icon": STAR_ICON}])
+        layers.append(pdk.Layer("IconLayer", spot, get_position="[lon, lat]", get_icon="icon", get_size=40,
+                                get_color=VENUE_COLOR, pickable=True))
+    lat, lon, zoom = _view(plan, venue, buffers)
+    view = pdk.ViewState(latitude=lat, longitude=lon, zoom=zoom, pitch=0, bearing=0, max_pitch=0)  # flat, no tilt
+    return pdk.Deck(layers=layers, initial_view_state=view, map_style=DARK_MAP,
                     tooltip={"text": "{tip}", "style": TOOLTIP_STYLE})

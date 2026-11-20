@@ -89,6 +89,15 @@ with st.container(border=True):
     b3.markdown(f"**{attendance:,} attendees x {exposed:.1%} exposed x {attack:.1%} sick x {to_ed:.1%} to an ED "
                 f"= about {n_est} ED patients**")
 
+    # Where these patients would go, for the settings above (before Apply), nearest ED first.
+    routes = city.route_table(city.incident_plan(params))
+    nearest = routes[~routes["Hospital"].str.startswith("CHEO")].iloc[:2]
+    st.markdown(f"**Where patients go from {ev['venue']}** (nearest first). Nearest adult ED: "
+                f"**{nearest.iloc[0]['Hospital']}** ({nearest.iloc[0]['Drive (min)']} min), then "
+                f"{nearest.iloc[1]['Hospital']} ({nearest.iloc[1]['Drive (min)']} min).")
+    st.dataframe(routes.style.format({"Road km (est.)": "{:.2f}"}).map(lambda v: "font-weight:bold" if v else "color:#888", subset=["Patients"]),
+                 hide_index=True, width="stretch")
+
 active = st.session_state.get("incident")
 if active and active != params:
     st.info("You changed the settings. Click **Apply to dashboard** to update the map and every page.")
@@ -98,9 +107,20 @@ plan = city.incident_plan(active) if active else None
 venue = {"lat": active["lat"], "lon": active["lon"], "tip": f"<b>{active['venue']}</b><br/>{active['event']}"} if active else None
 
 st.header("Map")
-st.markdown(city.map_legend(plan), unsafe_allow_html=True)
-st.pydeck_chart(city.city_map(events, plan, venue), height=520)
-st.caption(("" if plan else "Apply a scenario to see where patients go. ") + "Locations are approximate.")
+t1, t2, _ = st.columns([3, 3, 1])
+focus = st.session_state["hospital"]  # the hospital picked in the sidebar
+buffers = t1.toggle(f"{city.BUFFER_KM} km and drive-time zones: {city.MAP_LABELS.get(focus, focus)}", value=True,
+                    help=f"Circles around the hospital picked in the sidebar (change it there to see another ED). "
+                         f"Drive times use the same rule as the patient routing "
+                         f"(straight line x {city.ROAD_FACTOR} at {city.DRIVE_KMH} km/h), not real roads.")
+areas = t2.toggle("Ottawa dissemination areas", value=True,
+                  help="Statistics Canada 2021 Census dissemination areas (the smallest census area, about "
+                       "400 to 700 people each) inside the City of Ottawa municipal boundary.")
+st.markdown(city.map_legend(plan, buffers, areas, focus), unsafe_allow_html=True)
+st.pydeck_chart(city.city_map(events, plan, venue, buffers, areas, focus), height=560)
+st.caption(("" if plan else "Apply a scenario to see where patients go. ") + "Locations are approximate. "
+           "Zoom in to see road names. Boundaries: Statistics Canada, 2021 Census cartographic boundary files "
+           "(Open Government Licence - Canada). Base map: CARTO, OpenStreetMap contributors.")
 st.markdown("**What the labels on the map mean** (all 5 EDs are open 24/7)")
 st.dataframe(pd.DataFrame([
     ["Ottawa Hospital - Civic", "Civic", "The Ottawa Hospital, Civic Campus (Carling Ave)",
@@ -124,8 +144,17 @@ if plan:
                  "The city would need a code orange (mass casualty) response.")
     elif h["over_capacity"].any():
         st.warning("At least one ED goes over its surge capacity.")
+    elif plan["patients"] == 0:
+        st.info("No ED patients expected from this scenario, so no page changes.")
     else:
         st.success("Every receiving ED stays within its surge capacity.")
+    # The forecast covers only a few days; arrivals after its last hour can't be added to the staffing numbers.
+    last_hour = utils.load_forecast()["timestamp"].max()
+    late = plan["hourly"].loc[plan["hourly"]["timestamp"] > last_hour, "extra_arrivals"].sum()
+    if late >= 0.5:
+        st.warning(f"About {late:.0f} of the {plan['patients']} patients arrive after the forecast ends "
+                   f"({last_hour:%a %b %d %H:%M}), so they are not in the nurse/doctor numbers. "
+                   "Pick an earlier day or start time to see their full effect.")
 
     # Peak nurse gap during the scenario window, without and with the incident, per ED.
     window = lambda df: df[(df["timestamp"] >= start.floor("h")) &
@@ -194,6 +223,7 @@ with st.expander("How the estimates are made, and sources"):
     st.markdown(f"""
 - **Hospitals:** 5 Ottawa EDs open 24/7. Only {city.hospital_name(city.HOME_ED)} has data files (sample). The others
   use the same hourly forecast and schedule, scaled by annual ED visits (`data/hospitals.csv` lists the source for each).
+  The forecast is trained on synthetic (dummy) data, so volumes are illustrative and not calibrated to actual ED volumes.
 - **Events:** `data/events.csv` is a hand-made list, researched Nov 18, 2026. If a Ticketmaster API key is set
   (`TICKETMASTER_API_KEY` in Streamlit secrets), live Ottawa events are added. Their attendance is the venue capacity.
 - **Patients:** attendance x share exposed x attack rate x share who go to an ED (sliders above).
@@ -201,6 +231,8 @@ with st.expander("How the estimates are made, and sources"):
   (straight-line distance x {city.ROAD_FACTOR}, at {city.DRIVE_KMH} km/h).
 - **Which hospital:** the nearest ED until its surge capacity is used, then the next nearest. Under-18s go to CHEO first.
   If every ED is full, the rest are shared by ED size. In real life paramedics and the hospitals coordinate this.
+  Not modelled: specialty and equipment (e.g. major trauma or stroke going to a designated centre), so every adult ED
+  is treated as able to take every patient.
 - **Impact:** the incident patients are added to the expected arrivals, so nurses and doctors needed go up on the
   Home and Forecast pages for the hospital picked in the sidebar.
 """)

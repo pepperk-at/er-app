@@ -1,8 +1,8 @@
-"""Solution 2 page, V3 version (built from Member 2's triage_rules.xlsx and waiting_room.csv).
+"""Solution 2 page, V3 version (Godwin, Member 2; triage_rules.xlsx and waiting_room.csv are still the samples).
 
-Member 2's suggestions: colour code each triage level, and alert when a patient's waited minutes
-pass the threshold for their level. The thresholds are placeholders (see utils_v3.py) until
-Member 2 sends the real ones; the data files are still the samples.
+Godwin's suggestions: colour code each triage level, and alert when a patient's waited minutes
+pass the threshold for their level. The thresholds are the CTAS reassessment intervals from his
+brief (data/Godwin/triage_group_brief.docx); the 80% "due soon" share is a team guess.
 """
 import operator
 
@@ -123,4 +123,4 @@ st.dataframe(table.style.map(color_level, subset=["ctas_level"]).map(color_alert
              })
 st.caption(f"Overdue = waited longer than the threshold for the level. Due soon = waited at least "
            f"{utils.DUE_SOON_SHARE:.0%} of it. Thresholds are the CTAS reassessment intervals "
-           "(level 1 continuous, 2: 15, 3: 30, 4: 60, 5: 120 min); placeholder until Member 2 confirms them.")
+           "(level 1 continuous, 2: 15, 3: 30, 4: 60, 5: 120 min), from Godwin's triage brief. The due-soon share is a team assumption.")

@@ -64,8 +64,9 @@ With the sample data the results are 2 free, 16 occupied, 2 cleaning, 4 within 2
 and 8 flagged. Her 8 test cases and 10 bad-file checks all give her expected results.
 The stay times (360/300/270/180/150) are still unvalidated sample values.
 
-## Triage (Member 2)
-No new data yet. Built from Member 2's two suggestions:
+## Triage (Godwin, Member 2)
+Godwin sent a written brief (`data/Godwin/triage_group_brief.docx`), no data files, so
+`triage_rules.xlsx` and `waiting_room.csv` are still the samples. Built from his two suggestions:
 - **Colour code by level:** 1 red, 2 orange, 3 yellow, 4 green, 5 white (the team chose red and orange
   for levels 1 and 2 instead of the standard CTAS blue and red). A colour key sits at the top of the Triage page.
   The suggested level, the bar chart and the level columns in the tables use these colours.
@@ -75,9 +76,9 @@ No new data yet. Built from Member 2's two suggestions:
 - **Wait alerts:** each waiting patient's waited minutes are compared with a threshold for their level.
   Overdue = waited longer than the threshold (red banner and red label). Due soon = waited at least 80% of it
   (orange). Otherwise On time (green). The patient table lists the overdue patients first.
-- The thresholds are the CTAS reassessment intervals (1 continuous, 2: 15, 3: 30, 4: 60, 5: 120 min), and
-  the 80% "due soon" share is a guess. Both are placeholders in `utils_v2.py` (`REASSESS_MIN`, `DUE_SOON_SHARE`)
-  until Member 2 confirms them.
+- The thresholds are the CTAS reassessment intervals (1 continuous, 2: 15, 3: 30, 4: 60, 5: 120 min),
+  confirmed by Godwin's brief (`REASSESS_MIN` in `utils_v2.py`). The 80% "due soon" share
+  (`DUE_SOON_SHARE`) is still a team guess; his brief does not cover it.
 
 With the sample data: 14 of 18 patients overdue, 2 due soon (P1012, P1005), 2 on time.
 
