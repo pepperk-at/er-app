@@ -22,6 +22,7 @@ From the `er-app` folder:
 | Date | Idea | From | Status |
 |---|---|---|---|
 | Nov 18, 2026 | City of Ottawa scale: all 5 EDs, map, events, incident scenarios | Katherine | Built, pushed Nov 20 |
+| Nov 21, 2026 | Wait alerts renamed to CTAS terms (Past / Near / Within target) | Godwin's question | Built, not pushed |
 
 ## Idea 1: City of Ottawa, events and incidents
 New page **City & Events** (`pages/0_City_and_Events.py`, logic in `city_v3.py`) and a **Hospital** picker
@@ -122,12 +123,31 @@ even though QCH is nearest. If the team prefers, the overflow could be shared by
 
 Still to check: the visit numbers per campus, whether Civic is the right home ED, and the share who go to an ED.
 
+## Idea 2: wait alerts in CTAS terms (Nov 21, 2026)
+Godwin asked what Overdue / Due soon / On time mean and wanted them to match real ED terms.
+
+CTAS (Murray et al., 2004) uses the same times (1 immediate, 2: 15, 3: 30, 4: 60, 5: 120 min) for two clocks:
+time to physician initial assessment, counted from arrival, and the nurse reassessment interval, which restarts
+after each reassessment. The app counts from arrival and `waiting_room.csv` has no last-reassessed time, so it
+was really measuring the physician-assessment target while calling it reassessment. The team chose to rename
+(option A) rather than add a `last_reassessed` column (option B).
+
+- Labels: Overdue → **Past target**, Due soon → **Near target**, On time → **Within target**. Same rule and colours.
+- Home: "Overdue for reassessment" → "Past CTAS target". The CTAS table gets a "See a physician within" column
+  next to "Reassess while waiting".
+- Triage: banners, table heading, `threshold_min` → `target_min`, and the caption say "CTAS target time to physician
+  assessment". The new-patient result shows both the physician target and the reassessment interval.
+- `utils_v3.py`: new `TARGET_MIN` drives the alerts; `REASSESS_MIN` is kept for display. `DUE_SOON_SHARE` →
+  `NEAR_TARGET_SHARE` (still 80%, still a team guess).
+- Sample data result unchanged: 14 of 18 past target, 2 near target (P1012, P1005), 2 within target.
+- `app_v2` still uses the old labels.
+
 ## Page-by-page review (Nov 19, 2026)
 **Home** (done):
 - Sidebar **Hospital** dropdown: picks which Ottawa ED every page shows (only the home ED has data files; the
   others are scaled by annual visits). Fixed: it needed two clicks to switch. The widget now has its own key
   (`_hospital`) instead of `index=`; the sidebar sliders got the same fix.
-- Info icons (tooltips) on Patients waiting, Overdue for reassessment, Free now, and Estimated to finish occupancy
+- Info icons (tooltips) on Patients waiting, Overdue for reassessment (renamed Past CTAS target on Nov 21), Free now, and Estimated to finish occupancy
   within 2 h.
 - New **Triage levels (CTAS)** table at the bottom: level, name, plain meaning, reassessment interval.
 
@@ -136,9 +156,19 @@ loop test and 3 edge-case fixes. Details in Idea 1 above.
 
 **Forecast & Staffing, Triage, Treatment Spaces** (done, Nov 20).
 
-## Paused here (Nov 20, 2026)
-Done: page-by-page review of all pages; `events.csv` rebuilt for Nov 20 to Dec 10; everything committed and pushed
-to `main` (redeploys both Streamlit apps).
+## Paused here (Nov 20, 2026, end of day)
+Done: page-by-page review of all pages; `events.csv` rebuilt for Nov 20 to Dec 10; app code pushed to `main`
+(`8e62825`, redeploys both Streamlit apps). Team emailed with 4 questions (see below), and asked on Teams to check it.
+
+Not pushed yet: the latest README updates (this section and the status note in `app_v2/README.md`). Push them
+next session if they look right.
+
+Local only, not on GitHub:
+- `reference/evidence.md`: personal notes (sources and assumptions, testing, contribution log, GenAI use).
+- Git branch `backup-before-handoff-removal`: backup from removing the handoff folders. Delete it with
+  `git branch -D backup-before-handoff-removal` once the three `data/` handoff folders look right.
+
+V3 on Streamlit Cloud: create the app with main file `app_v3/Home.py`, then save the link.
 
 Teammates' raw handoffs (`data/Chengjin/`, `data/Godwin/`, `data/Gulchaman/`) are kept local only and are in
 `.gitignore`, so they are not in the public repo. Three old Chengjin files (`forecast.csv`, `forecast.zip`,
@@ -151,3 +181,6 @@ To do next:
 - Check hovering over the lines and stars in a real browser (only checked with screenshots so far).
 - Check the unconfirmed start times and attendance guesses in `events.csv` (see its `notes` column) before demo day.
 - Class pitch Part 2 and the slide still say triage estimates wait times per level (see `app_v2/README.md`).
+  They should use the new alert names (Past / Near / Within CTAS target) if the team keeps Idea 2.
+- The team was emailed on Nov 20 about the questions above; record their answers here.
+- Write out full citations for the incident sources (CDC MMWR, India outbreak, mass gathering studies).

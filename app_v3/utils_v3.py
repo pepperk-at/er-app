@@ -22,8 +22,13 @@ DATA = Path(__file__).parent / "data"
 DEMO_NOW = pd.Timestamp("2026-11-30 18:00")
 TIMEZONE = "America/Toronto"
 
-# CTAS reassessment intervals in minutes, confirmed by Godwin (Member 2) in
-# data/Godwin/triage_group_brief.docx (CTAS, Murray et al., 2004). Level 1 = continuous care.
+# CTAS times in minutes, confirmed by Godwin (Member 2) in data/Godwin/triage_group_brief.docx
+# (CTAS, Murray et al., 2004). CTAS uses the same numbers for two clocks:
+# - TARGET_MIN: time to physician initial assessment, counted from arrival (level 1 = immediately).
+# - REASSESS_MIN: how often a nurse re-checks a waiting patient; restarts after each reassessment
+#   (level 1 = continuous care). waiting_room.csv has no "last reassessed" time, so the wait alerts
+#   use TARGET_MIN; REASSESS_MIN is shown for information only.
+TARGET_MIN = {1: 0, 2: 15, 3: 30, 4: 60, 5: 120}
 REASSESS_MIN = {1: 0, 2: 15, 3: 30, 4: 60, 5: 120}
 
 # CTAS level names and colours (team choice: red, orange, yellow, green, white).
@@ -36,11 +41,13 @@ CTAS = {
     5: {"name": "Non-urgent", "color": "#F4F4F4", "text": "black"},
 }
 
-# Wait alerts. Thresholds = REASSESS_MIN (Godwin). DUE_SOON_SHARE is a team guess, not in his brief:
-# "Overdue" = waited longer than the reassessment interval for the level.
-# "Due soon" = waited at least DUE_SOON_SHARE of that interval (80% = 12 of 15 min for level 2).
-DUE_SOON_SHARE = 0.8
-ALERT_COLORS = {"Overdue": "#D62728", "Due soon": "#F28E2B", "On time": "#2CA02C"}
+# Wait alerts against the CTAS time-to-physician target (TARGET_MIN). NEAR_TARGET_SHARE is a team
+# guess, not part of CTAS or Godwin's brief:
+# "Past target" = waited longer than the target for the level.
+# "Near target" = waited at least NEAR_TARGET_SHARE of it (80% = 12 of 15 min for level 2).
+# "Within target" = everyone else.
+NEAR_TARGET_SHARE = 0.8
+ALERT_COLORS = {"Past target": "#D62728", "Near target": "#F28E2B", "Within target": "#2CA02C"}
 
 
 def ctas_label(level):
@@ -193,13 +200,13 @@ def waiting_list():
     added = pd.DataFrame(st.session_state.get("added_patients", []))
     df = pd.concat([base, added], ignore_index=True) if len(added) else base.copy()
     df["waited_min"] = ((DEMO_NOW - pd.to_datetime(df["arrival_time"])).dt.total_seconds() // 60).astype(int)
-    df["reassess_due"] = df["ctas_level"].map(REASSESS_MIN)
-    df["overdue"] = df["waited_min"] > df["reassess_due"]
-    df["minutes_left"] = df["reassess_due"] - df["waited_min"]  # negative = minutes overdue
-    due_soon = df["waited_min"] >= df["reassess_due"] * DUE_SOON_SHARE
-    df["alert"] = "On time"
-    df.loc[due_soon, "alert"] = "Due soon"
-    df.loc[df["overdue"], "alert"] = "Overdue"
+    df["target_min"] = df["ctas_level"].map(TARGET_MIN)
+    df["past_target"] = df["waited_min"] > df["target_min"]
+    df["minutes_left"] = df["target_min"] - df["waited_min"]  # negative = minutes past target
+    near = df["waited_min"] >= df["target_min"] * NEAR_TARGET_SHARE
+    df["alert"] = "Within target"
+    df.loc[near, "alert"] = "Near target"
+    df.loc[df["past_target"], "alert"] = "Past target"
     return df
 
 

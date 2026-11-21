@@ -64,9 +64,9 @@ with c2:
     st.metric("Patients waiting", len(waiting),
               help="Patients in the waiting room who have been triaged but are not yet in a treatment space. "
                    "Includes any patient added on the Triage page.")
-    st.metric("Overdue for reassessment", int((waiting["alert"] == "Overdue").sum()),
-              help="Patients who have waited longer than the CTAS reassessment interval for their level "
-                   "(see the triage table below, e.g. every 15 min for level 2). A nurse should check them again now.")
+    st.metric("Past CTAS target", int((waiting["alert"] == "Past target").sum()),
+              help="Patients who have waited longer than the CTAS target time to physician assessment for their "
+                   "level (see the triage table below, e.g. 15 min for level 2), counted from arrival.")
     st.altair_chart(utils.level_chart(waiting, height=250, numbers_only=True), width="stretch")
 with c3:
     st.subheader("3. Treatment spaces")
@@ -86,11 +86,12 @@ with c3:
 st.subheader("Triage levels (CTAS)")
 levels = pd.DataFrame([
     {"Level": lvl, "Name": c["name"], "What it means": MEANING[lvl],
+     "See a physician within": "Immediately" if utils.TARGET_MIN[lvl] == 0 else f"{utils.TARGET_MIN[lvl]} min",
      "Reassess while waiting": "Continuous care" if utils.REASSESS_MIN[lvl] == 0 else f"Every {utils.REASSESS_MIN[lvl]} min"}
     for lvl, c in utils.CTAS.items()])
 st.dataframe(levels.style.map(lambda lvl: f"background-color:{utils.CTAS[lvl]['color']};color:{utils.CTAS[lvl]['text']}",
                               subset=["Level"]), hide_index=True, width="stretch")
-st.caption("Canadian Triage and Acuity Scale (CTAS): 1 is the most urgent. Reassessment intervals from Godwin's brief "
-           "(Murray et al., 2004). Colours are a team choice.")
+st.caption("Canadian Triage and Acuity Scale (CTAS): 1 is the most urgent. Target times to physician assessment and "
+           "reassessment intervals from Godwin's brief (Murray et al., 2004). Colours are a team choice.")
 
 st.caption("Use the pages in the sidebar for details." + sample_note)

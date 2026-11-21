@@ -1,8 +1,8 @@
 """Solution 2 page, V3 version (Godwin, Member 2; triage_rules.xlsx and waiting_room.csv are still the samples).
 
 Godwin's suggestions: colour code each triage level, and alert when a patient's waited minutes
-pass the threshold for their level. The thresholds are the CTAS reassessment intervals from his
-brief (data/Godwin/triage_group_brief.docx); the 80% "due soon" share is a team guess.
+pass the target for their level. The targets are the CTAS times to physician assessment from his
+brief (data/Godwin/triage_group_brief.docx); the 80% "near target" share is a team guess.
 """
 import operator
 
@@ -59,8 +59,9 @@ if submitted:
             reasons.append(f"{rule['vital_sign']} {rule['operator']} {rule['cutoff']} -> level {level}")
     st.markdown("Suggested: " + level_badge(level, big=True), unsafe_allow_html=True)
     st.write("Why: " + "; ".join(reasons))
-    due = utils.REASSESS_MIN[level]
-    st.caption("Reassess continuously." if due == 0 else f"Reassess within {due} minutes.")
+    target, every = utils.TARGET_MIN[level], utils.REASSESS_MIN[level]
+    st.caption("CTAS target: see a physician immediately, continuous care." if target == 0 else
+               f"CTAS target: see a physician within {target} min; reassess every {every} min while waiting.")
     # remember the patient for this session so the waiting room updates
     st.session_state.setdefault("added_patients", []).append(
         {"patient_id": f"NEW{len(st.session_state['added_patients']) + 1}",
@@ -73,17 +74,17 @@ doctors = int(utils.current_hour_row(staff)["doctors_scheduled"])
 
 # Alerts at the top of the waiting room, most serious first.
 st.header("Waiting room")
-overdue = waiting[waiting["alert"] == "Overdue"]
-soon = waiting[waiting["alert"] == "Due soon"]
-if len(overdue):
-    worst = overdue.sort_values(["ctas_level", "minutes_left"]).iloc[0]
-    st.error(f"{len(overdue)} of {len(waiting)} patients are overdue for reassessment. "
+past = waiting[waiting["alert"] == "Past target"]
+near = waiting[waiting["alert"] == "Near target"]
+if len(past):
+    worst = past.sort_values(["ctas_level", "minutes_left"]).iloc[0]
+    st.error(f"{len(past)} of {len(waiting)} patients have waited past the CTAS target time to physician assessment. "
              f"Most urgent: {worst['patient_id']} (level {worst['ctas_level']}), "
-             f"{-worst['minutes_left']} min past the {worst['reassess_due']} min threshold.")
-if len(soon):
-    st.warning(f"{len(soon)} patients are due for reassessment soon: " + ", ".join(soon["patient_id"]))
-if not len(overdue) and not len(soon):
-    st.success("Every waiting patient is within their reassessment time.")
+             f"{-worst['minutes_left']} min past the {worst['target_min']} min target.")
+if len(near):
+    st.warning(f"{len(near)} patients are near their CTAS target: " + ", ".join(near["patient_id"]))
+if not len(past) and not len(near):
+    st.success("Every waiting patient is within their CTAS target time.")
 
 left, right = st.columns(2)
 with left:
@@ -97,12 +98,11 @@ with right:
                  hide_index=True)
 
 
-# Every waiting patient, most urgent problem first: overdue, then due soon, then by level.
-st.subheader("Waiting patients and reassessment alerts")
-order = {"Overdue": 0, "Due soon": 1, "On time": 2}
+# Every waiting patient, most urgent problem first: past target, then near target, then by level.
+st.subheader("Waiting patients and CTAS target alerts")
+order = {"Past target": 0, "Near target": 1, "Within target": 2}
 table = waiting.assign(_o=waiting["alert"].map(order)).sort_values(["_o", "ctas_level", "minutes_left"])
-table = table[["patient_id", "complaint", "ctas_level", "waited_min", "reassess_due", "minutes_left", "alert"]]
-table = table.rename(columns={"reassess_due": "threshold_min"})
+table = table[["patient_id", "complaint", "ctas_level", "waited_min", "target_min", "minutes_left", "alert"]]
 
 
 def color_level(lvl):
@@ -117,10 +117,11 @@ def color_alert(alert):
 st.dataframe(table.style.map(color_level, subset=["ctas_level"]).map(color_alert, subset=["alert"]),
              hide_index=True, height=(len(table) + 1) * 35 + 3,  # tall enough to show every patient
              column_config={
-                 "minutes_left": st.column_config.NumberColumn("minutes_left", help="Negative = minutes overdue"),
-                 "threshold_min": st.column_config.NumberColumn("threshold_min",
-                                                                help="CTAS reassessment interval for the level"),
+                 "minutes_left": st.column_config.NumberColumn("minutes_left", help="Negative = minutes past target"),
+                 "target_min": st.column_config.NumberColumn("target_min",
+                                                             help="CTAS target time to physician assessment for the level"),
              })
-st.caption(f"Overdue = waited longer than the threshold for the level. Due soon = waited at least "
-           f"{utils.DUE_SOON_SHARE:.0%} of it. Thresholds are the CTAS reassessment intervals "
-           "(level 1 continuous, 2: 15, 3: 30, 4: 60, 5: 120 min), from Godwin's triage brief. The due-soon share is a team assumption.")
+st.caption(f"Past target = waited longer than the CTAS target time to physician assessment for the level, counted "
+           f"from arrival. Near target = waited at least {utils.NEAR_TARGET_SHARE:.0%} of it. Targets: level 1 immediately, "
+           "2: 15, 3: 30, 4: 60, 5: 120 min, from Godwin's triage brief (Murray et al., 2004). The near-target share is a "
+           "team assumption. Reassessment is not tracked because the waiting room file has no last-reassessed time.")

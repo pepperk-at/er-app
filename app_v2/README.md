@@ -3,20 +3,15 @@
 The same app as the one in the repo root (the BEFORE version), but it uses Chengjin's
 3-day forecast. The root app is left untouched so the team can compare the two.
 
-> **Reminder (Nov 17, 2026): these changes have NOT been committed and pushed to GitHub yet.**
-> Not yet on GitHub: Chengjin's 3-day forecast, Gulchaman's treatment spaces, the triage colours
-> and wait alerts, and this README. Commit and push in VS Code, check the deployed app, then delete
-> this note.
+> **Status (Nov 20, 2026):** the app code is on GitHub (pushed Nov 19 and 20). This status note is not pushed yet.
+> Paused here; the full list of next steps is in `app_v3/README.md` ("Paused here").
 >
-> **Paused here (Nov 17, 2026). Where things stand:**
-> - Class pitch Part 4 (my part, the dashboard) is rewritten to match this app, in
->   `reference/Class Pitch - ER Wait Times.docx`. The old version is in
->   `reference/Class Pitch - ER Wait Times (before Nov 17 update).docx`.
-> - Still to do: Part 2 of the pitch and the pitch slide still say the triage page estimates how
->   long each level will wait. The app now shows overdue / due soon / on time alerts instead.
->   Update those lines or check with Godwin.
-> - Still to do: Part 4 is about 160 words. If the pitch runs long, cut the sentence that starts
->   "Below it, one box per teammate…".
+> **Still to do:**
+> - Rerun the forecast on Nov 29 or 30 (see "Making an updated forecast" below).
+> - Class pitch Part 2 and the pitch slide still say the triage page estimates how long each level
+>   will wait. The app now shows overdue / due soon / on time alerts instead. Asked Godwin by email (Nov 20).
+> - Class pitch Part 4 (the dashboard, in `reference/Class Pitch - ER Wait Times.docx`) is about
+>   160 words. If the pitch runs long, cut the sentence that starts "Below it, one box per teammate…".
 
 ## Run on your computer
 From the `er-app` folder:
@@ -93,7 +88,8 @@ who puts them here, so the before app keeps the original samples.
 
 ## Making an updated forecast
 Either Chengjin sends a new `forecast.csv` (copy it into `app_v2/data/`), or Katherine runs the script:
-1. Put `ottawa_er_training_data_2025.csv` in `app_v2/tools/` (copy it from `data/Chengjin/`).
+1. Put `ottawa_er_training_data_2025.csv` in `app_v2/tools/` (copy it from `data/Chengjin/`, which is on
+   Katherine's computer only and not on GitHub).
 2. `pip install prophet pandas requests` (plus `truststore` if you get a certificate error).
 3. `python app_v2/tools/forecast.py`. It writes `app_v2/data/forecast.csv` for today and the next 2 days (72 hours).
 4. Run the app, check it, commit and push.
