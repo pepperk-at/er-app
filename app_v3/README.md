@@ -3,7 +3,7 @@
 A copy of the AFTER app (`app_v2/`) made on Nov 18, 2026, for trying new ideas.
 `app_v2/` stays as the AFTER version the team agreed on; root stays as the BEFORE version.
 
-> **Pushed Nov 20, 2026. Page-by-page review done. Open to-dos: see "Paused here" at the bottom.**
+> **Pushed Nov 21, 2026 (Idea 2, CTAS alert names). All pages checked for errors. Open to-dos: see "Paused here" at the bottom.**
 
 ## Run on your computer
 From the `er-app` folder:
@@ -22,7 +22,7 @@ From the `er-app` folder:
 | Date | Idea | From | Status |
 |---|---|---|---|
 | Nov 18, 2026 | City of Ottawa scale: all 5 EDs, map, events, incident scenarios | Katherine | Built, pushed Nov 20 |
-| Nov 21, 2026 | Wait alerts renamed to CTAS terms (Past / Near / Within target) | Godwin's question | Built, not pushed |
+| Nov 21, 2026 | Wait alerts renamed to CTAS terms (Past / Near / Within target) | Godwin's question | Built, pushed Nov 21 |
 
 ## Idea 1: City of Ottawa, events and incidents
 New page **City & Events** (`pages/0_City_and_Events.py`, logic in `city_v3.py`) and a **Hospital** picker
@@ -58,6 +58,8 @@ the New Jersey game to Dec 3 (was Dec 4) and the Charge opener to 14:00. Attenda
 - Hover fix (Nov 18): Streamlit 1.65 drew the hover box one map-height above the mouse (off the map), and it
   escapes HTML in hover text. `TOOLTIP_STYLE` adds `top: 100%` to cancel the offset, and tips are plain text.
   Tested in headless Chrome. If Streamlit is upgraded and the box lands below the map, remove `top`.
+  Because of this, `requirements.txt` pins `streamlit==1.65.0` (Nov 21): unpinned, Streamlit Cloud installed a
+  newer release and the hover box opened one map-height below the mouse.
 - Map restyle (Nov 19): dark Carto basemap (light grey road and place names), ED dots all the same size
   (no longer scaled by visits), events as stars (IconLayer, SVG star), incident venue as a big gold star,
   a buffer per ED (one colour per ED), and Ottawa's 2021 dissemination areas plus the
@@ -156,31 +158,52 @@ loop test and 3 edge-case fixes. Details in Idea 1 above.
 
 **Forecast & Staffing, Triage, Treatment Spaces** (done, Nov 20).
 
-## Paused here (Nov 20, 2026, end of day)
-Done: page-by-page review of all pages; `events.csv` rebuilt for Nov 20 to Dec 10; app code pushed to `main`
-(`8e62825`, redeploys both Streamlit apps). Team emailed with 4 questions (see below), and asked on Teams to check it.
+## Paused here (Nov 21, 2026)
+Done on Nov 21:
+- Idea 2 (CTAS alert names) pushed to `main` (`b6203b4`), with the Nov 20 README updates. `app_v2` keeps the old
+  labels on purpose, so the team can see the before and after.
+- Error check of all 5 V3 pages, run locally with Streamlit's test runner, with no scenario and with the default
+  food poisoning scenario applied. No crashes or Python errors. The red and orange boxes are the app's own alerts.
+- Reply drafted for Godwin explaining Past / Near / Within target (not sent yet).
+- Before/after scenario for the presentation (Triage wait estimate at 18:00, sample data): calling in 2 doctors
+  (4 to 6) cuts the level 3 estimate from 35 to 23 min and level 5 from 90 to 60 min, about a third less. Only
+  doctors change the estimate; nurses do not. The full staffing gap (14 doctors) is not used because Chengjin's
+  synthetic volume is too high.
+- MAE for the forecast is Chengjin's part; the dashboard does not report it.
+- Deployed V3 app checked: https://er-app-njjqu4r98jkzf5dru58spw.streamlit.app. All 5 pages load with no errors
+  and match the local numbers (headless Chrome screenshots; clicks not tested).
+- Map hover fixed on Streamlit Cloud (`0ade4f7`): the box opened about 570 px below the mouse, under the map.
+  Cause: the cloud ran a newer Streamlit than 1.65, so the `top: 100%` fix pushed the box down. Pinned
+  `streamlit==1.65.0` in `requirements.txt`. Retested with a mouse sweep in headless Chrome: all 14 hover boxes
+  (5 EDs, 9 venues) open next to the mouse, locally and on the cloud.
+- Seen on Treatment Spaces, left for Gulchaman to decide: the heading says "Fictional Ottawa ER" (other pages
+  name the Civic Campus), and the Interpretation column is cut off at the right edge.
 
-Not pushed yet: the latest README updates (this section and the status note in `app_v2/README.md`). Push them
-next session if they look right.
+Done on Nov 20: page-by-page review of all pages; `events.csv` rebuilt for Nov 20 to Dec 10; app code pushed
+(`8e62825`). Team emailed with 4 questions (see below), and asked on Teams to check it.
+
+Committed on Nov 21 with the hover fix; push when ready.
 
 Local only, not on GitHub:
 - `reference/evidence.md`: personal notes (sources and assumptions, testing, contribution log, GenAI use).
 - Git branch `backup-before-handoff-removal`: backup from removing the handoff folders. Delete it with
   `git branch -D backup-before-handoff-removal` once the three `data/` handoff folders look right.
 
-V3 on Streamlit Cloud: create the app with main file `app_v3/Home.py`, then save the link.
+V3 on Streamlit Cloud (main file `app_v3/Home.py`): https://er-app-njjqu4r98jkzf5dru58spw.streamlit.app
 
 Teammates' raw handoffs (`data/Chengjin/`, `data/Godwin/`, `data/Gulchaman/`) are kept local only and are in
 `.gitignore`, so they are not in the public repo. Three old Chengjin files (`forecast.csv`, `forecast.zip`,
 `forecast/forecast.py`) were pushed before Nov 20 and are still in the GitHub history.
 
 To do next:
-- Click through every page of the deployed V3 app to confirm the cloud version works.
+- Send the reply to Godwin.
+- In the deployed V3 app, try the clicks: Apply a scenario, change the Hospital picker (pages load and map hover works, Nov 21).
+- Treatment Spaces heading and cut-off column: wait for Gulchaman's call.
 - Confirm with the team: Civic is the right `HOME_ED`, the visit numbers per campus, and the 25% who go to an ED.
 - Decide: share the overflow by ED size (now) or by distance.
-- Check hovering over the lines and stars in a real browser (only checked with screenshots so far).
+- Check hovering over the scenario lines in a real browser (dots and stars checked with a mouse sweep, Nov 21).
 - Check the unconfirmed start times and attendance guesses in `events.csv` (see its `notes` column) before demo day.
 - Class pitch Part 2 and the slide still say triage estimates wait times per level (see `app_v2/README.md`).
-  They should use the new alert names (Past / Near / Within CTAS target) if the team keeps Idea 2.
+  They should use the new alert names (Past / Near / Within CTAS target), now that Idea 2 is pushed.
 - The team was emailed on Nov 20 about the questions above; record their answers here.
 - Write out full citations for the incident sources (CDC MMWR, India outbreak, mass gathering studies).
