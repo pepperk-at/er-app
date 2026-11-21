@@ -3,7 +3,8 @@
 A copy of the AFTER app (`app_v2/`) made on Nov 18, 2026, for trying new ideas.
 `app_v2/` stays as the AFTER version the team agreed on; root stays as the BEFORE version.
 
-> **Pushed Nov 21, 2026 (Idea 2, CTAS alert names). All pages checked for errors. Open to-dos: see "Paused here" at the bottom.**
+> **Paused Nov 21, 2026. Pushed: Idea 2 (CTAS alert names) and the map hover fix (Streamlit pinned to 1.65.0).
+> All pages load on Streamlit Cloud and map hover works there. Open to-dos: see "Paused here" at the bottom.**
 
 ## Run on your computer
 From the `er-app` folder:
@@ -182,7 +183,8 @@ Done on Nov 21:
 Done on Nov 20: page-by-page review of all pages; `events.csv` rebuilt for Nov 20 to Dec 10; app code pushed
 (`8e62825`). Team emailed with 4 questions (see below), and asked on Teams to check it.
 
-Committed on Nov 21 with the hover fix; push when ready.
+Pushed to `main` on Nov 21: the Streamlit pin (`0ade4f7`). This README update is committed; push it with the next
+change (it only changes notes, not the app).
 
 Local only, not on GitHub:
 - `reference/evidence.md`: personal notes (sources and assumptions, testing, contribution log, GenAI use).
