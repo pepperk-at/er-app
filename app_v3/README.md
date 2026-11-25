@@ -3,7 +3,7 @@
 A copy of the AFTER app (`app_v2/`) made on Nov 18, 2026, for trying new ideas.
 `app_v2/` stays as the AFTER version the team agreed on; root stays as the BEFORE version.
 
-> **Paused Nov 21, 2026. Pushed: Idea 2 (CTAS alert names) and the map hover fix (Streamlit pinned to 1.65.0).
+> **Paused Nov 25, 2026. User guide added (`USER_GUIDE.md`). Pushed Nov 21: Idea 2 (CTAS alert names) and the map hover fix (Streamlit pinned to 1.65.0).
 > All pages load on Streamlit Cloud and map hover works there. Open to-dos: see "Paused here" at the bottom.**
 
 ## Run on your computer
@@ -159,7 +159,14 @@ loop test and 3 edge-case fixes. Details in Idea 1 above.
 
 **Forecast & Staffing, Triage, Treatment Spaces** (done, Nov 20).
 
-## Paused here (Nov 21, 2026)
+## Paused here (Nov 25, 2026)
+Done on Nov 25:
+- User guide written: `app_v3/USER_GUIDE.md`, pushed to `main` (`ddb2486`). It was drafted from the code and this
+  README, not by clicking through the app, so check the steps against the live app. An editable copy is in Claude
+  Docs (https://claude.ai/artifact/G9zTG9EwshEpdDErE8dSEK); the two are not synced, so edit one and copy it over.
+- The guide's byline names Katherine Hall in the public repo; change it to the group name if preferred.
+- This README note is committed locally; push it with the next change.
+
 Done on Nov 21:
 - Idea 2 (CTAS alert names) pushed to `main` (`b6203b4`), with the Nov 20 README updates. `app_v2` keeps the old
   labels on purpose, so the team can see the before and after.
