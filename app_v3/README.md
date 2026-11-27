@@ -159,13 +159,20 @@ loop test and 3 edge-case fixes. Details in Idea 1 above.
 
 **Forecast & Staffing, Triage, Treatment Spaces** (done, Nov 20).
 
-## Paused here (Nov 25, 2026)
+## Paused here (Nov 27, 2026)
+Done on Nov 27:
+- Main README has a "Start here" section with links to the live app and the user guide.
+- "Demo day" wording replaced in both READMEs and the guide ("the app's fixed time", "before presenting").
+- Guide byline stays Katherine Hall (she built the app).
+- User guide checked page by page against the app with Streamlit's test runner: all 5 pages load with no errors,
+  Suggest level adds a patient (18 to 19 waiting), Apply to dashboard gives 159 patients vs 35 surge capacity and
+  the scenario banner shows on Home, Forecast and Triage. One fix: the Treatment Spaces warning gives a count of
+  spaces at or past their average stay (not a list). Live app health check OK.
+- The private Claude Docs copy of the guide is not synced: it does not have the Nov 27 byline and Treatment
+  Spaces fixes. Copy the md into it, or export it if it has newer edits.
+
 Done on Nov 25:
-- User guide written: `app_v3/USER_GUIDE.md`, pushed to `main` (`ddb2486`). It was drafted from the code and this
-  README, not by clicking through the app, so check the steps against the live app. A private editable copy is
-  kept in Claude Docs; the two are not synced, so edit one and copy it over.
-- Nov 27: the main README has a "Start here" section with
-  links to the live app and the guide.
+- User guide written: `app_v3/USER_GUIDE.md`, pushed to `main` (`ddb2486`).
 
 Done on Nov 21:
 - Idea 2 (CTAS alert names) pushed to `main` (`b6203b4`), with the Nov 20 README updates. `app_v2` keeps the old
@@ -205,6 +212,7 @@ Teammates' raw handoffs (`data/Chengjin/`, `data/Godwin/`, `data/Gulchaman/`) ar
 `forecast/forecast.py`) were pushed before Nov 20 and are still in the GitHub history.
 
 To do next:
+- Sync the Claude Docs copy of the user guide with `app_v3/USER_GUIDE.md`.
 - Send the reply to Godwin.
 - In the deployed V3 app, try the clicks: Apply a scenario, change the Hospital picker (pages load and map hover works, Nov 21).
 - Treatment Spaces heading and cut-off column: wait for Gulchaman's call.
