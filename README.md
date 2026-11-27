@@ -1,7 +1,15 @@
 # ER Wait Dashboard (DTO 5389 group project)
 
 A Streamlit dashboard for an Ottawa emergency department: expected arrivals and staffing gaps, triage wait
-alerts, and treatment space status. It is set for the demo day, Mon Nov 30, 2026 at 18:00.
+alerts, and treatment space status. The app's clock is fixed at Mon Nov 30, 2026, 18:00, so the numbers stay the
+same each time it is opened.
+
+## Start here
+- Live app (nothing to install): https://er-app-njjqu4r98jkzf5dru58spw.streamlit.app
+- User guide: [app_v3/USER_GUIDE.md](app_v3/USER_GUIDE.md) walks through every page step by step, explains each
+  control and label, and lists the app's limits and troubleshooting tips.
+
+The rest of this README is for running and updating the app.
 
 This repo holds three versions of the app. Each one has its own code and its own `data/` folder, and they never
 load each other's files.

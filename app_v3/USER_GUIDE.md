@@ -1,6 +1,6 @@
 # ER App v3 User Guide
 
-Nov 25, 2026 · Katherine Hall
+Nov 25, 2026 · DTO 5389 Group 1
 
 ## Overview
 
@@ -8,7 +8,7 @@ ER App v3 is a shift dashboard for an Ottawa emergency department. In one place 
 
 It's built for the charge nurse or shift lead who has to decide, before a rush, whether to call in staff or speed up discharges.
 
-The forecast comes from Chengjin's model. Patient records, treatment spaces and the staff schedule are sample data, not real patients. The demo clock is fixed (Monday, November 30 at 18:00), so the numbers stay the same every time you open the app.
+The forecast comes from the team's forecast model. Patient records, treatment spaces and the staff schedule are sample data, not real patients. The app's clock is fixed at Monday, November 30, 2026 at 18:00, so the numbers stay the same every time you open the app.
 
 ## Getting started
 
@@ -119,7 +119,7 @@ The app is a planning demo, not a clinical tool. Keep these limits in mind when 
 - Patient, space and schedule data are samples for the Civic. On the Triage and Treatment Spaces pages, every hospital shows the Civic's records.
 - Drive times are straight-line distance x 1.4 at 40 km/h, not real roads. Everyone is assumed to drive; paramedic dispatch and code orange coordination aren't modelled.
 - Crowd injury rates are placeholders with no source yet. The 25% who go to an ED for food poisoning is a team assumption.
-- Some event start times and attendance numbers in the built-in list are estimates. Check the notes column before demo day.
+- Some event start times and attendance numbers in the built-in list are estimates. Check the notes column before presenting.
 - Reassessment isn't tracked, because the waiting room file has no last-reassessed time. Alerts measure time to physician assessment only.
 
 | Problem | What to do |
