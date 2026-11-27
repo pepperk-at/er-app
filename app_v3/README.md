@@ -162,10 +162,10 @@ loop test and 3 edge-case fixes. Details in Idea 1 above.
 ## Paused here (Nov 25, 2026)
 Done on Nov 25:
 - User guide written: `app_v3/USER_GUIDE.md`, pushed to `main` (`ddb2486`). It was drafted from the code and this
-  README, not by clicking through the app, so check the steps against the live app. An editable copy is in Claude
-  Docs (https://claude.ai/artifact/G9zTG9EwshEpdDErE8dSEK); the two are not synced, so edit one and copy it over.
-- The guide's byline names Katherine Hall in the public repo; change it to the group name if preferred.
-- This README note is committed locally; push it with the next change.
+  README, not by clicking through the app, so check the steps against the live app. A private editable copy is
+  kept in Claude Docs; the two are not synced, so edit one and copy it over.
+- Nov 27: the guide's byline now reads "DTO 5389 Group 1", and the main README has a "Start here" section with
+  links to the live app and the guide.
 
 Done on Nov 21:
 - Idea 2 (CTAS alert names) pushed to `main` (`b6203b4`), with the Nov 20 README updates. `app_v2` keeps the old
