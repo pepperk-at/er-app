@@ -87,7 +87,7 @@ the New Jersey game to Dec 3 (was Dec 4) and the Charge opener to 14:00. Attenda
   case a key turns up. Alternatives looked at: NHL public schedule (no key, used to build events.csv), SeatGeek
   (needs a developer signup), City of Ottawa open data (no events dataset).
 - Live events have no attendance, so the app uses the venue capacity (`VENUE_CAPACITY` in `city_v3.py`), or 500.
-- On demo day (Mon Nov 30) there is **no big game in Ottawa**: the Senators play in Nashville. Real events that
+- At the app's fixed time (Mon Nov 30) there is **no big game in Ottawa**: the Senators play in Nashville. Real events that
   night are small (NAC concerts, a Hard Rock Casino show). So row E01 is a **what-if** sold-out game at
   Canadian Tire Centre at 18:00, the default scenario. Real Senators and Charge games on other days are listed too.
 
@@ -164,7 +164,7 @@ Done on Nov 25:
 - User guide written: `app_v3/USER_GUIDE.md`, pushed to `main` (`ddb2486`). It was drafted from the code and this
   README, not by clicking through the app, so check the steps against the live app. A private editable copy is
   kept in Claude Docs; the two are not synced, so edit one and copy it over.
-- Nov 27: the guide's byline now reads "DTO 5389 Group 1", and the main README has a "Start here" section with
+- Nov 27: the main README has a "Start here" section with
   links to the live app and the guide.
 
 Done on Nov 21:
@@ -211,7 +211,7 @@ To do next:
 - Confirm with the team: Civic is the right `HOME_ED`, the visit numbers per campus, and the 25% who go to an ED.
 - Decide: share the overflow by ED size (now) or by distance.
 - Check hovering over the scenario lines in a real browser (dots and stars checked with a mouse sweep, Nov 21).
-- Check the unconfirmed start times and attendance guesses in `events.csv` (see its `notes` column) before demo day.
+- Check the unconfirmed start times and attendance guesses in `events.csv` (see its `notes` column) before presenting.
 - Class pitch Part 2 and the slide still say triage estimates wait times per level (see `app_v2/README.md`).
   They should use the new alert names (Past / Near / Within CTAS target), now that Idea 2 is pushed.
 - The team was emailed on Nov 20 about the questions above; record their answers here.

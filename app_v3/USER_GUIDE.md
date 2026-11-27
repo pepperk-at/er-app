@@ -1,6 +1,6 @@
 # ER App v3 User Guide
 
-Nov 25, 2026 · DTO 5389 Group 1
+Nov 25, 2026 · Katherine Hall
 
 ## Overview
 
@@ -69,7 +69,7 @@ The waiting room section below shows alerts first (most urgent patient past targ
 
 The top boxes count spaces that are free now, occupied and being cleaned. The next box estimates how many occupied spaces will free up within 2 and 4 hours. The 4-hour number already includes the 2-hour number, so don't add them.
 
-An orange warning lists spaces whose patient has stayed longer than the average for their level. Those need someone to update their status. The detail table shows every space with its time used, assumed stay and estimated time left.
+An orange warning counts the occupied spaces whose patient has stayed at least as long as the average for their level. Those need someone to update their status, and they're left out of the 2- and 4-hour numbers. The detail table shows every space with its time used, assumed stay and estimated time left.
 
 ### City and Events: run an incident scenario
 
